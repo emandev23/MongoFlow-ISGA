@@ -3,22 +3,37 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Settings as SettingsIcon, Database, Save, RotateCcw } from 'lucide-react';
+import { Settings as SettingsIcon, Database, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function SettingsView() {
   const settings = useSettingsStore();
-  const [hasChanges, setHasChanges] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
-  const handleSave = () => {
-    setHasChanges(false);
-  };
+  // Show saved indicator when settings change
+  useEffect(() => {
+    setShowSaved(true);
+    const timer = setTimeout(() => setShowSaved(false), 2000);
+    return () => clearTimeout(timer);
+  }, [
+    settings.connectionString,
+    settings.defaultDatabase,
+    settings.theme,
+    settings.showLineNumbers,
+    settings.defaultLimit,
+    settings.enableQueryHistory,
+    settings.defaultLanguage,
+  ]);
 
   const handleReset = () => {
-    settings.resetSettings();
-    setHasChanges(false);
+    if (confirm('Are you sure you want to reset all settings to default values?')) {
+      settings.resetSettings();
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2000);
+    }
   };
 
   return (
@@ -33,14 +48,16 @@ export function SettingsView() {
             Configure your MongoDB connection and preferences
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          {showSaved && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Saved
+            </Badge>
+          )}
           <Button variant="outline" onClick={handleReset}>
             <RotateCcw className="h-4 w-4 mr-2" />
-            Reset
-          </Button>
-          <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Save
+            Reset to Defaults
           </Button>
         </div>
       </div>
@@ -62,7 +79,6 @@ export function SettingsView() {
                 value={settings.connectionString}
                 onChange={(e) => {
                   settings.updateConnectionString(e.target.value);
-                  setHasChanges(true);
                 }}
                 placeholder="mongodb://localhost:27017"
                 className="font-mono"
@@ -74,7 +90,6 @@ export function SettingsView() {
                 value={settings.defaultDatabase}
                 onChange={(e) => {
                   settings.updateDefaultDatabase(e.target.value);
-                  setHasChanges(true);
                 }}
                 placeholder="my_database"
               />
@@ -94,18 +109,17 @@ export function SettingsView() {
                 <span className="text-sm font-medium">Theme</span>
                 <p className="text-xs text-muted-foreground">Choose your preferred theme</p>
               </div>
-              <select
+              <Select
                 value={settings.theme}
                 onChange={(e) => {
                   settings.updateTheme(e.target.value as 'light' | 'dark' | 'auto');
-                  setHasChanges(true);
                 }}
-                className="px-3 py-1.5 border rounded-md text-sm"
+                className="w-32"
               >
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
                 <option value="auto">Auto</option>
-              </select>
+              </Select>
             </div>
             <div className="flex items-center justify-between">
               <div>
@@ -117,7 +131,6 @@ export function SettingsView() {
                 size="sm"
                 onClick={() => {
                   settings.toggleShowLineNumbers();
-                  setHasChanges(true);
                 }}
               >
                 {settings.showLineNumbers ? 'On' : 'Off'}
@@ -140,7 +153,6 @@ export function SettingsView() {
                 value={settings.defaultLimit}
                 onChange={(e) => {
                   settings.updateDefaultLimit(parseInt(e.target.value) || 100);
-                  setHasChanges(true);
                 }}
                 min="1"
                 max="10000"
@@ -156,7 +168,6 @@ export function SettingsView() {
                 size="sm"
                 onClick={() => {
                   settings.toggleEnableQueryHistory();
-                  setHasChanges(true);
                 }}
               >
                 {settings.enableQueryHistory ? 'Enabled' : 'Disabled'}
@@ -174,18 +185,16 @@ export function SettingsView() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Default Language</label>
-              <select
+              <Select
                 value={settings.defaultLanguage}
                 onChange={(e) => {
                   settings.updateDefaultLanguage(e.target.value as 'nodejs' | 'python' | 'shell');
-                  setHasChanges(true);
                 }}
-                className="w-full px-3 py-1.5 border rounded-md text-sm"
               >
                 <option value="nodejs">Node.js</option>
                 <option value="python">Python</option>
                 <option value="shell">MongoDB Shell</option>
-              </select>
+              </Select>
             </div>
           </CardContent>
         </Card>

@@ -21,7 +21,11 @@ export function DatabaseConnection() {
     disconnect,
   } = useWorkflowStore();
   const { databases, setDatabases, createDatabase } = useDocumentStore();
-  const [connectionString, setConnectionStringLocal] = useState('mongodb://localhost:27017');
+  // Use environment variable as default if available, otherwise localhost
+  const defaultConnection = typeof window !== 'undefined' 
+    ? (process.env.NEXT_PUBLIC_MONGODB_URI || 'mongodb://localhost:27017')
+    : 'mongodb://localhost:27017';
+  const [connectionString, setConnectionStringLocal] = useState(defaultConnection);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showNewDb, setShowNewDb] = useState(false);
   const [newDbName, setNewDbName] = useState('');

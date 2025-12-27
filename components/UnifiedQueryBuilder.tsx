@@ -5,6 +5,7 @@ import { useQueryStore } from '@/store/queryStore';
 import { usePipelineStore } from '@/store/pipelineStore';
 import { useWorkflowStore } from '@/store/workflowStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { QueryGroup, QueryCondition } from '@/types/query';
 import { analyzeSchemaFromDocuments } from '@/lib/schemaAnalyzer';
 import { mockDocuments } from '@/lib/mockDocuments';
@@ -18,7 +19,7 @@ import { Plus, Trash2, X, Play, Code, Database } from 'lucide-react';
 import { AdaptiveInput } from './AdaptiveInput';
 import { StageEditor } from './StageEditor';
 import { generateQueryJSON } from '@/lib/queryGenerator';
-import { generateShellCode } from '@/lib/codeGenerator';
+import { generateShellCode, generateNodeJSCode, generatePythonCode } from '@/lib/codeGenerator';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
@@ -50,11 +51,28 @@ const STAGE_TYPES = [
 
 type StageType = typeof STAGE_TYPES[number]['value'];
 
+function getStageDescription(stageType: string): string {
+  const descriptions: Record<string, string> = {
+    '$match': 'Filter documents',
+    '$group': 'Group and calculate',
+    '$sort': 'Sort results',
+    '$limit': 'Limit results',
+    '$skip': 'Skip documents',
+    '$project': 'Select fields',
+    '$unwind': 'Unwind arrays',
+    '$lookup': 'Join collections',
+    '$addFields': 'Add new fields',
+    '$count': 'Count documents',
+  };
+  return descriptions[stageType] || 'Process documents';
+}
+
 export function UnifiedQueryBuilder() {
   const { currentQuery, createQuery, updateQuery, setQueryResults, setLoadingResults, queryResults, isLoadingResults } = useQueryStore();
   const { stages, addStage, removeStage, schema, setExecutionStats, setSchema } = usePipelineStore();
   const { selectedCollection, selectedDatabase, connectionString } = useWorkflowStore();
   const { documents, setDocuments, setLoading } = useDocumentStore();
+  const { defaultLanguage, showLineNumbers, defaultLimit } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<'query' | 'pipeline' | 'results' | 'code'>('query');
   const [useQueryAsMatch, setUseQueryAsMatch] = useState(false);
   const [showStageMenu, setShowStageMenu] = useState(false);
@@ -75,7 +93,7 @@ export function UnifiedQueryBuilder() {
             connectionString,
             databaseName: selectedDatabase,
             collectionName: selectedCollection,
-            limit: 100,
+            limit: defaultLimit,
           }),
         })
           .then(res => res.json())
@@ -174,7 +192,7 @@ export function UnifiedQueryBuilder() {
           collectionName: selectedCollection,
           query: queryJSON,
           projection: currentQuery.projection,
-          limit: currentQuery.limit || 100,
+          limit: currentQuery.limit || defaultLimit,
           skip: currentQuery.skip || 0,
         }),
       });
@@ -199,6 +217,12 @@ export function UnifiedQueryBuilder() {
 
   const handleExecuteAggregation = async () => {
     if (stages.length === 0) {
+      alert('Please add at least one stage to the aggregation pipeline');
+      return;
+    }
+
+    if (!connectionString || !selectedDatabase || !selectedCollection) {
+      alert('Please connect to a database and select a collection first');
       return;
     }
 
@@ -262,9 +286,175 @@ export function UnifiedQueryBuilder() {
             return { $match: matchObj };
           }
           
+          if (stage.type === '$group') {
+            // Convert $group stage: fields should be directly in $group, not in a 'fields' sub-object
+            let groupId: any = stage.config._id || null;
+            
+            // If _id is a string (field name), it should be a field reference with $
+            // Only add $ if it's not already there and it's not null
+            if (groupId !== null && typeof groupId === 'string' && !groupId.startsWith('$') && groupId !== 'null') {
+              groupId = `$${groupId}`;
+            }
+            
+            const groupObj: Record<string, any> = {
+              _id: groupId,
+            };
+            
+            // Merge aggregation fields directly into group object
+            if (stage.config.fields) {
+              Object.assign(groupObj, stage.config.fields);
+            }
+            
+            // Validate that we have at least one aggregation field or _id is null
+            if (Object.keys(groupObj).length === 1 && groupObj._id === null) {
+              console.warn('$group stage has no aggregation fields');
+            }
+            return { $group: groupObj };
+          }
+          
+          if (stage.type === '$sort') {
+            const sortObj: Record<string, number> = {};
+            (stage.config.fields || []).forEach((field: any) => {
+              if (field.name) {
+                // Sort field name should not have $ prefix (it's already a field name)
+                sortObj[field.name] = field.direction === 'asc' ? 1 : -1;
+              }
+            });
+            // If no fields, return empty sort (sorts by insertion order)
+            if (Object.keys(sortObj).length === 0) {
+              return { $sort: { _id: 1 } };
+            }
+            return { $sort: sortObj };
+          }
+          
+          if (stage.type === '$project') {
+            // Project fields - handle both simple format and rename format
+            const projectFields = stage.config.fields || {};
+            const projectObj: Record<string, any> = {};
+            
+            Object.entries(projectFields).forEach(([key, value]) => {
+              // If value is a string starting with $, it's a field reference (rename)
+              if (typeof value === 'string' && value.startsWith('$')) {
+                projectObj[key] = value;
+              } else {
+                // Otherwise it's include/exclude (1 or 0)
+                projectObj[key] = value;
+              }
+            });
+            
+            return { $project: projectObj };
+          }
+          
+          if (stage.type === '$limit') {
+            const limit = parseInt(stage.config.limit) || 10;
+            if (limit <= 0) {
+              console.warn('$limit must be greater than 0, using default 10');
+              return { $limit: 10 };
+            }
+            return { $limit: limit };
+          }
+          
+          if (stage.type === '$skip') {
+            const skip = parseInt(stage.config.skip) || 0;
+            if (skip < 0) {
+              console.warn('$skip cannot be negative, using 0');
+              return { $skip: 0 };
+            }
+            return { $skip: skip };
+          }
+          
+          if (stage.type === '$unwind') {
+            const path = stage.config.path || '';
+            // $unwind can be a string (path) or an object with options
+            if (path.startsWith('$')) {
+              return { $unwind: path };
+            } else if (path) {
+              return { $unwind: `$${path}` };
+            } else {
+              return { $unwind: '' };
+            }
+          }
+          
+          if (stage.type === '$lookup') {
+            const lookupConfig: any = {
+              from: stage.config.from || '',
+            };
+            
+            // Handle different lookup formats
+            if (stage.config.localField && stage.config.foreignField) {
+              // Standard lookup
+              lookupConfig.localField = stage.config.localField.startsWith('$') 
+                ? stage.config.localField 
+                : `$${stage.config.localField}`;
+              lookupConfig.foreignField = stage.config.foreignField;
+              lookupConfig.as = stage.config.as || 'result';
+            } else if (stage.config.let) {
+              // Lookup with let
+              lookupConfig.let = stage.config.let;
+              lookupConfig.pipeline = stage.config.pipeline || [];
+              lookupConfig.as = stage.config.as || 'result';
+            }
+            
+            return { $lookup: lookupConfig };
+          }
+          
+          if (stage.type === '$addFields') {
+            return { $addFields: stage.config.fields || {} };
+          }
+          
+          if (stage.type === '$count') {
+            return { $count: stage.config.field || 'count' };
+          }
+          
           // For other stages, convert to MongoDB format
           return { [stage.type]: stage.config };
         }).filter((stage): stage is any => stage !== null); // Remove null stages
+
+        // Validate pipeline before sending
+        const validationErrors: string[] = [];
+        pipeline.forEach((stage, index) => {
+          if (!stage || typeof stage !== 'object') {
+            validationErrors.push(`Stage ${index}: Invalid stage object`);
+            return;
+          }
+          
+          const stageType = Object.keys(stage)[0];
+          const stageConfig = stage[stageType];
+          
+          if (stageType === '$group') {
+            if (!stageConfig._id && stageConfig._id !== null) {
+              validationErrors.push(`Stage ${index} ($group): _id is required`);
+            }
+            if (Object.keys(stageConfig).length === 1) {
+              validationErrors.push(`Stage ${index} ($group): At least one aggregation field is required`);
+            }
+          }
+          
+          if (stageType === '$unwind' && !stageConfig) {
+            validationErrors.push(`Stage ${index} ($unwind): Path is required`);
+          }
+          
+          if (stageType === '$lookup') {
+            if (!stageConfig.from) {
+              validationErrors.push(`Stage ${index} ($lookup): 'from' collection is required`);
+            }
+            if (!stageConfig.localField && !stageConfig.let) {
+              validationErrors.push(`Stage ${index} ($lookup): 'localField' or 'let' is required`);
+            }
+          }
+        });
+        
+        if (validationErrors.length > 0) {
+          console.error('Pipeline validation errors:', validationErrors);
+          alert(`Pipeline Validation Errors:\n${validationErrors.join('\n')}`);
+          setLoadingResults(false);
+          return;
+        }
+        
+        // Log the pipeline for debugging
+        console.log('=== AGGREGATION PIPELINE ===');
+        console.log('Converted pipeline:', JSON.stringify(pipeline, null, 2));
+        console.log('Number of stages:', pipeline.length);
 
         const response = await fetch('/api/mongodb/aggregate', {
           method: 'POST',
@@ -281,6 +471,10 @@ export function UnifiedQueryBuilder() {
 
         const data = await response.json();
         if (response.ok && data.documents) {
+          console.log('=== AGGREGATION RESULTS ===');
+          console.log(`Documents returned: ${data.documents.length}`);
+          console.log('First result:', JSON.stringify(data.documents[0] || {}, null, 2));
+          
           setQueryResults(data.documents);
           setExecutionStats({
             executionTime: data.executionTime || 0,
@@ -290,11 +484,19 @@ export function UnifiedQueryBuilder() {
           });
         } else {
           setQueryResults([]);
-          console.error('Aggregation execution failed:', data.error);
+          const errorMessage = data.error || 'Failed to execute aggregation';
+          console.error('=== AGGREGATION ERROR ===');
+          console.error('Error:', errorMessage);
+          console.error('Pipeline that failed:', JSON.stringify(pipeline, null, 2));
+          console.error('Full error response:', data);
+          alert(`Aggregation Error: ${errorMessage}\n\nCheck the console for pipeline details.`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Aggregation execution error:', error);
         setQueryResults([]);
+        alert(`Aggregation Error: ${error.message || 'Unknown error occurred'}`);
+      } finally {
+        setLoadingResults(false);
       }
     } else {
       setQueryResults([]);
@@ -330,13 +532,40 @@ export function UnifiedQueryBuilder() {
     }
 
     if (pipelineStages.length > 0) {
-      return generateShellCode(pipelineStages, collectionName);
+      switch (defaultLanguage) {
+        case 'nodejs':
+          return generateNodeJSCode(pipelineStages, collectionName);
+        case 'python':
+          return generatePythonCode(pipelineStages, collectionName);
+        case 'shell':
+        default:
+          return generateShellCode(pipelineStages, collectionName);
+      }
     }
     
     if (hasQuery) {
       const queryObj = generateQueryJSON(currentQuery);
       const queryStr = JSON.stringify(queryObj, null, 2);
-      return `db.${collectionName}.find(${queryStr})`;
+      const hasProjection = currentQuery.projection && Object.keys(currentQuery.projection).length > 0;
+      const projectionStr = hasProjection ? JSON.stringify(currentQuery.projection, null, 2) : '';
+      
+      if (defaultLanguage === 'nodejs') {
+        if (hasProjection) {
+          return `await db.${collectionName}.find(${queryStr}, ${projectionStr}).toArray();`;
+        }
+        return `await db.${collectionName}.find(${queryStr}).toArray();`;
+      } else if (defaultLanguage === 'python') {
+        if (hasProjection) {
+          return `list(${collectionName}.find(${queryStr}, ${projectionStr}))`;
+        }
+        return `list(${collectionName}.find(${queryStr}))`;
+      } else {
+        // MongoDB shell format
+        if (hasProjection) {
+          return `db.${collectionName}.find(${queryStr}, ${projectionStr})`;
+        }
+        return `db.${collectionName}.find(${queryStr})`;
+      }
     }
     
     return `// No query or pipeline defined`;
@@ -364,7 +593,7 @@ export function UnifiedQueryBuilder() {
           <Button 
             onClick={handleExecuteAggregation} 
             size="sm"
-            disabled={stages.length === 0 && (!useQueryAsMatch || !currentQuery || currentQuery.query.conditions.length === 0)}
+            disabled={!connectionString || !selectedDatabase || !selectedCollection || (stages.length === 0 && (!useQueryAsMatch || !currentQuery || currentQuery.query.conditions.length === 0))}
           >
             <Play className="h-4 w-4 mr-2" />
             Execute Aggregation
@@ -499,8 +728,18 @@ export function UnifiedQueryBuilder() {
 
             {stages.length === 0 ? (
               <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <p>No stages added yet. Click &quot;Add Stage&quot; to start building your pipeline.</p>
+                <CardContent className="py-12 text-center">
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground">No stages added yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Start by adding a stage. Common examples:
+                    </p>
+                    <div className="text-xs text-muted-foreground space-y-1 mt-4 max-w-md mx-auto">
+                      <p>• <strong className="font-mono">$group</strong> - Group documents and calculate sums, averages, etc.</p>
+                      <p>• <strong className="font-mono">$match</strong> - Filter documents</p>
+                      <p>• <strong className="font-mono">$sort</strong> - Sort results</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
@@ -509,11 +748,21 @@ export function UnifiedQueryBuilder() {
                   <Card key={stage.id}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{index + (useQueryAsMatch && currentQuery && currentQuery.query.conditions.length > 0 ? 1 : 0)}</Badge>
-                          <CardTitle className="text-lg">{stage.type}</CardTitle>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary" className="font-mono">
+                            {index + (useQueryAsMatch && currentQuery && currentQuery.query.conditions.length > 0 ? 1 : 0)}
+                          </Badge>
+                          <CardTitle className="text-lg font-mono">{stage.type}</CardTitle>
+                          <span className="text-xs text-muted-foreground">
+                            {getStageDescription(stage.type)}
+                          </span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeStage(stage.id)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeStage(stage.id)}
+                          title="Remove stage"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -547,15 +796,61 @@ export function UnifiedQueryBuilder() {
                 <CardTitle className="text-lg">Results ({queryResults.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                  {queryResults.map((result, index) => (
-                    <div key={index} className="p-3 border rounded-lg bg-card">
-                      <pre className="text-xs overflow-auto">
-                        {JSON.stringify(result, null, 2)}
-                      </pre>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="border-b bg-muted/80 backdrop-blur-sm">
+                        {Object.keys(queryResults[0] || {}).map((key) => (
+                          <th
+                            key={key}
+                            className="text-left p-3 font-semibold"
+                          >
+                            {key === '_id' ? 'Name / ID' : key}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {queryResults.map((result, index) => (
+                        <tr
+                          key={index}
+                          className="border-b hover:bg-accent/30 transition-colors"
+                        >
+                          {Object.entries(result).map(([key, value]) => (
+                            <td key={key} className="p-3">
+                              {key === '_id' ? (
+                                <span className="font-medium text-foreground">{String(value)}</span>
+                              ) : typeof value === 'number' ? (
+                                <span className="font-semibold text-foreground">
+                                  {value.toLocaleString('en-US', { 
+                                    minimumFractionDigits: 2, 
+                                    maximumFractionDigits: 2 
+                                  })}
+                                </span>
+                              ) : value === null || value === undefined ? (
+                                <span className="text-muted-foreground italic">null</span>
+                              ) : (
+                                <span className="text-foreground">{String(value)}</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                {queryResults.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <details>
+                      <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                        View Raw JSON ({queryResults.length} {queryResults.length === 1 ? 'document' : 'documents'})
+                      </summary>
+                      <pre className="text-xs mt-2 p-3 bg-muted rounded overflow-auto max-h-[300px] font-mono">
+                        {JSON.stringify(queryResults, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -568,9 +863,10 @@ export function UnifiedQueryBuilder() {
             </CardHeader>
             <CardContent>
               <SyntaxHighlighter
-                language="javascript"
+                language={defaultLanguage === 'python' ? 'python' : 'javascript'}
                 style={vscDarkPlus}
                 customStyle={{ borderRadius: '0.5rem', fontSize: '0.875rem' }}
+                showLineNumbers={showLineNumbers}
               >
                 {generateCombinedCode()}
               </SyntaxHighlighter>
