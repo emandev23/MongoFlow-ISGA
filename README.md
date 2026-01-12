@@ -2,6 +2,21 @@
 
 A professional MongoDB management tool built with Next.js, TypeScript, and modern React patterns. MongoFlow provides a MongoDB Compass-like experience with AI-powered assistance, real-time query building, and document management.
 
+## 📋 For SoftwareX Reviewers
+
+**Repository:** [https://github.com/emandev23/MongoFlow-ISGA.git](https://github.com/emandev23/MongoFlow-ISGA.git)
+
+**SoftwareX Documentation:** See [softwarxDocs.md](./softwarxDocs.md) for complete software description, architecture, and metadata information required for SoftwareX submission.
+
+**Quick Start for Reviewers:**
+1. Clone the repository: `git clone https://github.com/emandev23/MongoFlow-ISGA.git`
+2. Install dependencies: `npm install`
+3. Set up environment: Create `.env.local` with `GEMINI_API_KEY=your_key_here` (see [Getting Started](#getting-started) below)
+4. Run the application: `npm run dev`
+5. Access at: http://localhost:3000
+
+**Note:** The application requires a MongoDB instance (local or cloud) and a Google Gemini API key for AI features. See the [Installation](#installation) section for detailed setup instructions.
+
 ## Features
 
 **Core Features:**
@@ -39,7 +54,7 @@ A professional MongoDB management tool built with Next.js, TypeScript, and moder
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/emandev23/MongoFlow-ISGA.git
 cd MongoFlow
 ```
 
