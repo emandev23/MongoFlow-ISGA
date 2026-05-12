@@ -1,0 +1,12 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongoflow-repro-mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongoflow_repro_data:/data/db
+
+volumes:
+  mongoflow_repro_data:

@@ -57,7 +57,7 @@ function generateSeedData() {
 }
 
 async function testSeed() {
-  const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+  const connectionString = process.env.MONGODB_URI || 'mongodb://mongo:27017';
   const databaseName = process.argv[2] || 'sample_db';
 
   console.log(`Connecting to MongoDB: ${connectionString}`);

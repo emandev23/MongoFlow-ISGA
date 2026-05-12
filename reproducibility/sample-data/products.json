@@ -1,0 +1,138 @@
+[
+  {
+    "name": "Laptop Pro 15",
+    "category": "Electronics",
+    "brand": "TechBrand",
+    "price": 1200,
+    "quantity": 8,
+    "rating": 4.7
+  },
+  {
+    "name": "Smartphone X",
+    "category": "Electronics",
+    "brand": "MobileOne",
+    "price": 850,
+    "quantity": 10,
+    "rating": 4.5
+  },
+  {
+    "name": "Wireless Mouse",
+    "category": "Electronics",
+    "brand": "TechBrand",
+    "price": 60,
+    "quantity": 40,
+    "rating": 4.2
+  },
+  {
+    "name": "Office Desk",
+    "category": "Furniture",
+    "brand": "HomeSpace",
+    "price": 450,
+    "quantity": 12,
+    "rating": 4.3
+  },
+  {
+    "name": "Ergonomic Chair",
+    "category": "Furniture",
+    "brand": "ComfortPlus",
+    "price": 300,
+    "quantity": 20,
+    "rating": 4.6
+  },
+  {
+    "name": "Bookshelf",
+    "category": "Furniture",
+    "brand": "HomeSpace",
+    "price": 120,
+    "quantity": 30,
+    "rating": 4.1
+  },
+  {
+    "name": "Washing Machine",
+    "category": "Home Appliances",
+    "brand": "CleanMax",
+    "price": 700,
+    "quantity": 5,
+    "rating": 4.4
+  },
+  {
+    "name": "Microwave Oven",
+    "category": "Home Appliances",
+    "brand": "KitchenPro",
+    "price": 150,
+    "quantity": 25,
+    "rating": 4.0
+  },
+  {
+    "name": "Vacuum Cleaner",
+    "category": "Home Appliances",
+    "brand": "CleanMax",
+    "price": 90,
+    "quantity": 40,
+    "rating": 4.2
+  },
+  {
+    "name": "Robot Toy",
+    "category": "Toys",
+    "brand": "FunTech",
+    "price": 30,
+    "quantity": 200,
+    "rating": 4.1
+  },
+  {
+    "name": "Puzzle Set",
+    "category": "Toys",
+    "brand": "KidsWorld",
+    "price": 45,
+    "quantity": 100,
+    "rating": 4.5
+  },
+  {
+    "name": "Football",
+    "category": "Sports",
+    "brand": "Sportiva",
+    "price": 80,
+    "quantity": 50,
+    "rating": 4.3
+  },
+  {
+    "name": "Yoga Mat",
+    "category": "Sports",
+    "brand": "FitLife",
+    "price": 35,
+    "quantity": 90,
+    "rating": 4.4
+  },
+  {
+    "name": "Database Systems Book",
+    "category": "Books",
+    "brand": "AcademicPress",
+    "price": 25,
+    "quantity": 120,
+    "rating": 4.6
+  },
+  {
+    "name": "JavaScript Handbook",
+    "category": "Books",
+    "brand": "CodePress",
+    "price": 40,
+    "quantity": 80,
+    "rating": 4.5
+  },
+  {
+    "name": "Premium Perfume",
+    "category": "Beauty",
+    "brand": "LuxuryScents",
+    "price": 200,
+    "quantity": 10,
+    "rating": 4.2
+  },
+  {
+    "name": "Basic Pen Pack",
+    "category": "Stationery",
+    "brand": "OfficeLine",
+    "price": 10,
+    "quantity": 300,
+    "rating": 4.0
+  }
+]
