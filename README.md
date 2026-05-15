@@ -1,204 +1,207 @@
-# MongoFlow - Advanced MongoDB IDE
+# MongoFlow
 
-A professional MongoDB management tool built with Next.js, TypeScript, and modern React patterns. MongoFlow provides a MongoDB Compass-like experience with AI-powered assistance, real-time query building, and document management.
+MongoFlow is an open-source, web-based MongoDB IDE for document exploration, sample-based schema inference, visual aggregation construction, multi-language code export, post-execution statistics, and optional AI-assisted query explanation and correction.
 
-## 📋 For SoftwareX Reviewers
+MongoFlow is designed for educational, exploratory, and research-oriented MongoDB workflows. It provides a browser-based interface that helps users inspect MongoDB collections, build aggregation pipelines, view generated code, execute queries, and review AI-assisted suggestions.
 
-**Repository:** [https://github.com/emandev23/MongoFlow-ISGA.git](https://github.com/emandev23/MongoFlow-ISGA.git)
+## Main Features
 
-**SoftwareX Documentation:** See [softwarxDocs.md](./softwarxDocs.md) for complete software description, architecture, and metadata information required for SoftwareX submission.
+### Core workflow
 
-**Quick Start for Reviewers:**
-1. Clone the repository: `git clone https://github.com/emandev23/MongoFlow-ISGA.git`
-2. Install dependencies: `npm install`
-3. Set up environment: Create `.env.local` with `GEMINI_API_KEY=your_key_here` (see [Getting Started](#getting-started) below)
-4. Run the application: `npm run dev`
-5. Access at: http://localhost:3000
+- Browser-based MongoDB interaction
+- Sample-based schema inference from MongoDB documents
+- Type-aware controls based on inferred fields
+- Visual aggregation pipeline construction
+- Multi-language code export to MongoDB Shell, Node.js, and Python
+- Post-execution statistics after query execution
+- AI-assisted query explanation and correction
 
-**Note:** The application requires a MongoDB instance (local or cloud) and a Google Gemini API key for AI features. See the [Installation](#installation) section for detailed setup instructions.
+### Supporting database-client functions
 
-## Features
+- MongoDB connection management
+- Document browsing, creation, update, and deletion
+- Integrated MongoDB shell
+- Index management
+- Collection validation-rule management
+- Query history
+- Breadcrumb navigation
 
-**Core Features:**
-- Database connection management with connection string support
-- Hierarchical database tree with expandable databases and collections
-- Document CRUD operations with form-based editing
-- Visual query builder for complex nested queries
-- Aggregation pipeline builder with visual interface
-- Interactive MongoDB shell
-- AI assistant powered by Google Gemini for query assistance and error fixing
+## Project Status
 
-**Collection Views:**
-- Documents: View, create, edit, and delete with dynamic form inputs
-- Aggregations: Build and execute aggregation pipelines
-- Schema: Dynamic schema analysis showing field types and structure
-- Indexes: Create, view, and manage indexes
-- Validation: Create and manage collection validation rules
+MongoFlow is an early-stage research software artifact. It is suitable for MongoDB learning, exploratory data work, and experimentation with AI-assisted database interaction.
 
-**AI Features:**
-- Intelligent error detection and automatic fixes
-- Code generation for MongoDB queries
-- Context-aware assistance based on database schema
-- Proactive help when errors occur
+It is not currently presented as a production-ready multi-tenant database platform. Public or institutional deployments require additional security mechanisms, including authentication, authorization, user-specific connection isolation, secure credential storage, and audit logging.
 
-## Getting Started
+## Requirements
 
-### Prerequisites
-
-- Node.js 18+
+- Node.js 18 or later
 - npm or yarn
-- MongoDB instance (local or remote)
-- Google Gemini API key (for AI features)
+- A MongoDB instance, local or cloud-based
+- Optional: Google Gemini API key for AI-assisted features
 
-### Installation
+## Installation
 
-1. Clone the repository:
+Clone the repository:
+
 ```bash
 git clone https://github.com/emandev23/MongoFlow-ISGA.git
-cd MongoFlow
+cd MongoFlow-ISGA
 ```
 
-2. Install dependencies:
+Install dependencies:
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
-   Create a `.env.local` file in the root directory:
-```env
+Create an environment file:
+```bash
+cp .env.example .env
+```
+
+Configure the optional AI key:
+```bash
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
-   Get your API key from: https://makersuite.google.com/app/apikey
 
-4. Run the development server:
+Start the development server:
 ```bash
 npm run dev
 ```
 
-5. Open your browser:
-   Navigate to [http://localhost:3000](http://localhost:3000)
+Open the application in the browser: `http://localhost:3000`
 
-### Building for Production
+## Basic Usage
+1. Open MongoFlow in the browser.
+2. Enter a MongoDB connection string.
+3. Select a database and collection.
+4. Browse documents and inspect inferred fields.
+5. Build an aggregation pipeline using the visual interface.
+6. Review the generated MongoDB Shell, Node.js, or Python code.
+7. Execute the query and inspect the returned results.
+8. Review post-execution statistics when available.
+9. Optionally use the AI assistant for query generation, explanation, or correction.
 
+## AI Assistant
+MongoFlow includes an optional AI assistant based on a configured external model provider.
+
+The assistant can help with:
+- Natural-language query formulation
+- MongoDB query explanation
+- Post-execution error explanation
+- Query correction suggestions
+- Aggregation pipeline generation
+
+The AI assistant works by sending a structured prompt to the configured provider. When available, the prompt may include:
+- Selected database name
+- Selected collection name
+- Inferred field information 
+- Truncated sample document structure
+- Recent commands
+- Runtime error messages
+- Failed command text
+
+AI-generated output is shown to the user for review. It should not be treated as authoritative. Generated queries may be incorrect, incomplete, inefficient, or unsafe if executed without verification.
+
+## AI Privacy Notice
+
+When AI assistance is enabled, MongoFlow may send database context to the configured AI provider, including collection names, inferred field information, sample document structure, recent commands, and error messages.
+
+Do not use AI assistance with sensitive, confidential, regulated, or production data unless your deployment and provider configuration satisfy your privacy and security requirements.
+
+The AI assistant does not require sending MongoDB passwords or connection strings to the model provider.
+
+## Security Considerations
+MongoFlow handles MongoDB operations through a server-side layer so that database operations and AI requests are not executed directly from the browser.
+
+However, the current version should not be exposed as a public shared service without additional security hardening.
+
+For secure deployment, consider:
+- Enabling authentication for the MongoFlow interface
+- Isolating database connections per user
+- Avoiding shared credentials
+- Using least-privilege MongoDB users
+- Avoiding public exposure of development deployments
+- Using HTTPS
+- Avoiding logs that contain connection strings or sensitive data
+- Reviewing AI-provider privacy settings before enabling AI features
+
+## Reproducibility
+
+A reproducibility package is provided in the repository under: `reproducibility/`
+
+The package includes:
+- Local MongoDB setup instructions
+- Sample e-commerce dataset
+- Reproduction workflow
+- Expected aggregation query
+- Expected results
+- Notes on optional AI-assisted reproduction
+
+The core workflow can be reproduced without an AI key. AI-assisted query generation and correction require a configured Gemini API key.
+
+## Evaluation
+
+MongoFlow was evaluated during an engineering-class practical session. The evaluation covered representative MongoDB tasks, including:
+- Database connection
+- Document browsing
+- Schema inspection
+- Visual aggregation construction
+- Code generation
+- Query execution
+- AI-assisted query generation or correction
+
+## Testing Status
+The current version includes manual validation through reproducible workflows and classroom evaluation.
+
+A comprehensive automated test suite is planned. Future tests should include:
+- Unit tests for aggregation pipeline serialization
+- Integration tests for MongoDB API routes 
+- UI tests for the visual aggregation builder 
+- Regression tests for AI prompt and context construction 
+- Safety tests for destructive-command warnings
+
+Current available checks:
 ```bash
+npm run lint
 npm run build
-npm start
 ```
 
-### Deployment
+## Accessibility Status
+MongoFlow has not yet undergone a formal WCAG accessibility audit.
 
-**Important:** Local MongoDB (`mongodb://localhost:27017`) is not accessible from the internet. When deploying to Vercel, Netlify, or any cloud platform, use MongoDB Atlas (cloud MongoDB).
+Future accessibility work should include:
+- Keyboard navigation checks
+- Focus-order checks
+- Screen-reader label review
+- Color-contrast review
+- Form-label review
+- Error-message accessibility review
 
-**Quick Solution:**
-1. Create a free MongoDB Atlas account: [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a cluster (free tier available)
-3. Get your connection string (format: `mongodb+srv://user:pass@cluster.mongodb.net/dbname`)
-4. Users can enter this connection string in your deployed app
+## Documentation
+The detailed documentation for MongoFlow is available in the `docs/` directory.
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment guide.
+## Limitations
+MongoFlow has the following current limitations:
+- AI-generated queries are not formally verified.
+- AI outputs may vary across runs. 
+- AI features depend on an external model provider. 
+- AI use may send database context to the configured provider. 
+- Sample-based schema inference may miss rare fields or mixed field types. 
+- The tool does not currently provide full production-grade multi-user isolation. 
+- The project does not yet include a comprehensive automated test suite. 
+- A formal accessibility audit has not yet been conducted. 
 
-## Project Structure
-
-```
-MongoFlow/
-├── app/                    # Next.js app directory
-│   ├── api/                # API routes
-│   │   ├── ai/             # AI assistant endpoints
-│   │   └── mongodb/        # MongoDB operation endpoints
-│   ├── layout.tsx
-│   ├── page.tsx
-│   └── globals.css
-├── components/             # React components
-│   ├── ui/                 # Shadcn/UI components
-│   ├── layout/             # Layout components
-│   ├── views/              # Collection view components
-│   └── [various components]
-├── lib/                    # Utility functions
-├── store/                  # Zustand state management
-├── types/                  # TypeScript definitions
-└── scripts/                # Utility scripts
-```
-
-## Usage
-
-**Connecting to MongoDB:**
-1. Click "Connect to MongoDB" on the home page
-2. Enter your MongoDB connection string (e.g., `mongodb://localhost:27017`)
-3. Click "Connect"
-
-**Working with Documents:**
-- Select a collection from the sidebar
-- View, create, edit, and delete documents in the Documents tab
-- Use the search bar to filter documents
-
-**Building Queries:**
-- Navigate to Aggregations tab
-- Add query conditions using the visual query builder
-- Select fields from the schema sidebar
-- Execute query to see results
-
-**MongoDB Shell:**
-- Expand the MongoDB Shell at the bottom
-- Type MongoDB commands (e.g., `db.products.find()`)
-- Press Ctrl+Enter (Cmd+Enter) to execute
-
-**AI Assistant:**
-- Open the AI Assistant from the floating button
-- Ask questions about MongoDB operations
-- Get code suggestions with executable code blocks
-- AI automatically detects and fixes command errors
-
-**Managing Indexes and Validation:**
-- Navigate to Indexes or Validation tabs
-- Create, view, and manage indexes or validation rules
-
-## Technologies
-
-- Next.js 14 - React framework with App Router
-- TypeScript - Type safety
-- Zustand - State management
-- MongoDB - Official MongoDB Node.js driver
-- Google Gemini AI - AI-powered assistance
-- Tailwind CSS - Utility-first CSS framework
-- Shadcn/UI - React components
-
-## API Routes
-
-**MongoDB Operations:**
-- `POST /api/mongodb/connect` - Connect to MongoDB
-- `GET /api/mongodb/databases` - List databases
-- `GET /api/mongodb/collections` - List collections
-- `POST /api/mongodb/documents` - Create document
-- `GET /api/mongodb/documents` - Get documents
-- `PUT /api/mongodb/documents` - Update document
-- `DELETE /api/mongodb/documents` - Delete document
-- `POST /api/mongodb/aggregate` - Execute aggregation
-- `POST /api/mongodb/query` - Execute query
-- `POST /api/mongodb/indexes` - Get indexes
-- `PUT /api/mongodb/indexes` - Create index
-- `DELETE /api/mongodb/indexes` - Delete index
-- `POST /api/mongodb/validation` - Get validation rules
-- `PUT /api/mongodb/validation` - Set validation rules
-- `DELETE /api/mongodb/validation` - Remove validation rules
-- `POST /api/mongodb/shell` - Execute shell command
-
-**AI Operations:**
-- `POST /api/ai/chat` - Chat with AI assistant
-- `GET /api/ai/models` - List available Gemini models
-
-## Environment Variables
-
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Roadmap
+Planned improvements include:
+- Stronger authentication and authorization support 
+- User-specific connection isolation 
+- Additional AI-provider configuration options 
+- Optional support for local or self-hosted language models 
+- Pre-execution validation for unknown fields and potentially unsafe operations 
+- More complete automated testing 
+- More onboarding examples and tutorials 
+- Broader evaluation with additional users and datasets 
+- Formal accessibility review
 
 ## License
 

@@ -1,0 +1,12 @@
+flowchart LR
+  user["User"] --> ui["Browser Interface\nQueries • Schema • Shell • AI Chat"]
+
+  ui --> server["MongoFlow Server\nAPI routes • Security • Context builder"]
+
+  server --> db["MongoDB\nDocuments • Schema • Query results"]
+  server --> ai["AI Provider\nQuery generation • Error correction"]
+
+  db --> server
+  ai --> server
+
+  server --> ui
